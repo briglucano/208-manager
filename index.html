@@ -43,6 +43,11 @@
         .editing .btn-cancel { display: block; }
         .editing .btn-main { background: #fbc02d; color: #000; }
 
+        .summary-box { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; text-align: center; }
+        .stat-card { background: #f8f9fa; padding: 10px; border-radius: 12px; border: 1px solid #eee; }
+        .stat-card b { font-size: 1.1rem; display: block; }
+        .stat-card span { font-size: 0.7rem; color: #666; text-transform: uppercase; }
+
         .month-block { margin-bottom: 10px; border-radius: 8px; overflow: hidden; border: 1px solid #ddd; background: white; }
         .month-header { background: #e3f2fd; padding: 12px; font-weight: bold; color: var(--primary); display: flex; justify-content: space-between; cursor: pointer; }
         .month-body { display: none; }
@@ -119,10 +124,21 @@
     </div>
 
     <div id="history" class="form-section">
-        <div style="text-align:center; margin-bottom:15px">
-            <b id="st_tot" style="font-size:1.5rem; color:var(--primary)">€0</b><br>
-            <span style="font-size:0.8em; color:#666">Spesa Totale Storico</span>
+        <div class="summary-box">
+            <div class="stat-card" style="border-left: 4px solid var(--fuel)">
+                <span style="color:var(--fuel)">Diesel</span>
+                <b id="tot_fuel">€ 0.00</b>
+            </div>
+            <div class="stat-card" style="border-left: 4px solid var(--maint)">
+                <span style="color:var(--maint)">Lavori</span>
+                <b id="tot_maint">€ 0.00</b>
+            </div>
+            <div class="stat-card" style="grid-column: span 2; background: #e3f2fd; border-top: 1px solid var(--primary)">
+                <span style="color:var(--primary)">Totale Complessivo</span>
+                <b id="st_tot" style="font-size: 1.4rem">€ 0.00</b>
+            </div>
         </div>
+
         <div style="height:200px; margin-bottom:20px"><canvas id="chart"></canvas></div>
         <div id="history-container"></div>
         <div class="backup-area">
@@ -282,16 +298,26 @@ function render() {
     const db = getDb();
     const container = document.getElementById('history-container');
     container.innerHTML = "";
-    let totalCost = 0;
+    
+    let totalFuel = 0;
+    let totalMaint = 0;
     let groups = {};
+
     db.forEach(r => {
-        totalCost += parseFloat(r.cost);
+        const costValue = parseFloat(r.cost);
+        if (r.type === 'fuel') totalFuel += costValue;
+        else totalMaint += costValue;
+
         const k = r.date.substring(0, 7);
         if(!groups[k]) groups[k] = { total: 0, items: [] };
-        groups[k].total += parseFloat(r.cost);
+        groups[k].total += costValue;
         groups[k].items.push(r);
     });
-    document.getElementById('st_tot').innerText = "€ " + totalCost.toFixed(2);
+
+    document.getElementById('tot_fuel').innerText = "€ " + totalFuel.toFixed(2);
+    document.getElementById('tot_maint').innerText = "€ " + totalMaint.toFixed(2);
+    document.getElementById('st_tot').innerText = "€ " + (totalFuel + totalMaint).toFixed(2);
+
     const sortedKeys = Object.keys(groups).sort().reverse();
     const monthsMap = ["Gen","Feb","Mar","Apr","Mag","Giu","Lug","Ago","Set","Ott","Nov","Dic"];
 
